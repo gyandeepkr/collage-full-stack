@@ -1,0 +1,7 @@
+const nums = [
+    {name:"gyandeep",marks:10},
+    {name:"rohan",marks:30},
+    {name:"maynak",marks:78}
+];
+const big = nums.filter(n => n.marks > 50);
+console.log(big);
