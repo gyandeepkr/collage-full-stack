@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #07090f;
+      --panel:     #0c0f1a;
+      --card:      #10141f;
+      --border:    rgba(255,255,255,.08);
+      --border-hi: rgba(255,255,255,.18);
+      --text:      #e8eaf0;
+      --muted:     #5a6080;
+      --accent:    #4f7cff;
+      --accent2:   #7c3aff;
+      --ok:        #22c55e;
+      --warn:      #f59e0b;
+      --err:       #ef4444;
+      --glow:      rgba(79,124,255,.18);
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(79,124,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,124,255,.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ambient glows */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: .45;
+    }
+    .glow-orb-1 { width: 500px; height: 500px; top:-150px; left:-100px; background: var(--accent2); opacity:.2; }
+    .glow-orb-2 { width: 400px; height: 400px; bottom:-100px; right:-80px; background: var(--accent); opacity:.18; }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      position: relative; z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 56px;
+      border-right: 1px solid var(--border);
+    }
+
+    .brand {
+      font-size: 11px;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 36px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+    .left-headline {
+      font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.05;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #e8eaf0 0%, #8899cc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .left-sub {
+      font-size: .9rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 48px;
+      max-width: 340px;
+    }
+
+    /* feature list */
+    .features { display: flex; flex-direction: column; gap: 16px; }
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .feature-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(79,124,255,.12);
+      border: 1px solid rgba(79,124,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* submissions log */
+    .log-section {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .log-title {
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .log-clear {
+      background: none;
+      border: none;
+      color: var(--err);
+      font-family: 'Syne', sans-serif;
+      font-size: 9px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: .6;
+      transition: opacity .2s;
+    }
+    .log-clear:hover { opacity: 1; }
+
+    .log-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+    .log-item {
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'Syne Mono', monospace;
+      font-size: .7rem;
+      color: var(--muted);
+      animation: slideIn .3s ease;
+    }
+    .log-item strong { color: var(--ok); font-weight: 400; }
+    .log-empty { font-size: .78rem; color: var(--muted); opacity: .5; font-style: italic; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── RIGHT PANEL (FORM) ── */
+    .right-panel {
+      position: relative; z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 56px;
+      overflow-y: auto;
+    }
+
+    .form-heading {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .form-sub {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    /* ── FIELD GROUP ── */
+    .field-group { margin-bottom: 20px; position: relative; }
+
+    label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      transition: color .2s ease;
+    }
+    .field-group:focus-within label { color: var(--accent); }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 44px 13px 16px;
+      font-family: 'Syne', sans-serif;
+      font-size: .9rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+      caret-color: var(--accent);
+    }
+    input:focus {
+      border-color: rgba(79,124,255,.5);
+      box-shadow: 0 0 0 3px rgba(79,124,255,.1), 0 2px 12px rgba(79,124,255,.08);
+      background: rgba(79,124,255,.04);
+    }
+    input.valid   { border-color: rgba(34,197,94,.45);  box-shadow: 0 0 0 3px rgba(34,197,94,.08); }
+    input.invalid { border-color: rgba(239,68,68,.45);  box-shadow: 0 0 0 3px rgba(239,68,68,.08); }
+
+    /* status icon */
+    .field-icon {
+      position: absolute;
+      right: 14px;
+      font-size: 14px;
+      pointer-events: none;
+      transition: opacity .2s ease;
+      opacity: 0;
+    }
+    input.valid   ~ .field-icon::after { content:'✓'; color: var(--ok); }
+    input.invalid ~ .field-icon::after { content:'✗'; color: var(--err); }
+    input.valid ~ .field-icon,
+    input.invalid ~ .field-icon { opacity: 1; }
+
+    /* show/hide pw button */
+    .pw-toggle {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px;
+      transition: color .2s ease;
+      z-index: 2;
+    }
+    .pw-toggle:hover { color: var(--text); }
+
+    /* inline error */
+    .field-error {
+      font-size: .72rem;
+      color: var(--err);
+      margin-top: 6px;
+      min-height: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: opacity .2s ease;
+      opacity: 0;
+    }
+    .field-error.show { opacity: 1; }
+    .field-error::before { content: '!'; width: 14px; height: 14px; border-radius: 50%; background: var(--err); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* ── PASSWORD STRENGTH ── */
+    .strength-wrap { margin-top: 10px; }
+    .strength-bars {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .strength-bar {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,.08);
+      transition: background .3s ease, transform .2s ease;
+    }
+    .strength-bar.lit-1 { background: var(--err); }
+    .strength-bar.lit-2 { background: var(--warn); }
+    .strength-bar.lit-3 { background: #84cc16; }
+    .strength-bar.lit-4 { background: var(--ok); }
+
+    .strength-label {
+      font-size: .7rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color .3s ease;
+    }
+
+    .strength-rules {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 12px;
+    }
+    .rule {
+      font-size: .7rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s ease;
+    }
+    .rule.met { color: var(--ok); }
+    .rule-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      flex-shrink: 0;
+      transition: background .2s ease;
+    }
+    .rule.met .rule-dot { background: currentColor; }
+
+    /* ── SUBMIT ── */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      cursor: pointer;
+      margin-top: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: opacity .2s ease, transform .15s ease, box-shadow .2s ease;
+      box-shadow: 0 4px 20px rgba(79,124,255,.3);
+    }
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(79,124,255,.45);
+    }
+    .submit-btn:active:not(:disabled) { transform: translateY(0); }
+    .submit-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .submit-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+      pointer-events: none;
+    }
+
+    /* ── SUCCESS FLASH ── */
+    .success-msg {
+      background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: .85rem;
+      color: var(--ok);
+      margin-top: 16px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn .35s ease;
+    }
+    .success-msg.show { display: flex; }
+
+    /* ── FORM ROW (name split) ── */
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
+
+    @media (max-width: 768px) {
+      body { grid-template-columns: 1fr; }
+      .left-panel { padding: 40px 28px 0; border-right: none; border-bottom: 1px solid var(--border); }
+      .right-panel { padding: 32px 28px 48px; }
+      .field-row { grid-template-columns: 1fr; gap: 0; }
+      .left-headline { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+
+  <!-- ── LEFT PANEL ── -->
+  <div class="left-panel">
+    <div class="brand"><span class="brand-dot"></span>Mini App · 03</div>
+    <h1 class="left-headline">Create your<br/>account.</h1>
+    <p class="left-sub">Real-time inline validation. Every submission is appended to a <code style="color:var(--accent);font-family:'Syne Mono',monospace;font-size:.85em">submissions[]</code> array in localStorage.</p>
+
+    <div class="features">
+      <div class="feature-item">
+        <div class="feature-icon">✦</div>
+        <div>Live field validation — name, email, phone & password checked as you type.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">⚡</div>
+        <div>Password strength meter with rule checklist: length, uppercase, number, symbol.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">💾</div>
+        <div>Each valid submission appended to <code style="color:var(--accent);font-family:'Syne Mono',monospace;font-size:.9em">localStorage</code> and shown below.</div>
+      </div>
+    </div>
+
+    <div class="log-section">
+      <div class="log-title">
+        <span>Submission Log</span>
+        <button class="log-clear" id="logClear">Clear all</button>
+      </div>
+      <div class="log-list" id="logList">
+        <div class="log-empty" id="logEmpty">No submissions yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-panel">
+    <h2 class="form-heading">Sign up</h2>
+    <p class="form-sub">All fields are required. Validation fires on input.</p>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label for="firstName">First Name</label>
+        <div class="input-wrap">
+          <input type="text" id="firstName" placeholder="Jane" autocomplete="given-name"/>
+          <span class="field-icon"></span>
+        </div>
+        <div class="field-error" id="firstNameErr"></div>
+      </div>
+      <div class="field-group">
+        <label for="lastName">Last Name</label>
+        <div class="input-wrap">
+          <input type="text" id="lastName" placeholder="Doe" autocomplete="family-name"/>
+          <span class="field-icon"></span>
+        </div>
+        <div class="field-error" id="lastNameErr"></div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="email">Email Address</label>
+      <div class="input-wrap">
+        <input type="email" id="email" placeholder="jane@example.com" autocomplete="email"/>
+        <span class="field-icon"></span>
+      </div>
+      <div class="field-error" id="emailErr"></div>
+    </div>
+
+    <div class="field-group">
+      <label for="phone">Phone Number</label>
+      <div class="input-wrap">
+        <input type="tel" id="phone" placeholder="+1 (555) 000-0000" autocomplete="tel"/>
+        <span class="field-icon"></span>
+      </div>
+      <div class="field-error" id="phoneErr"></div>
+    </div>
+
+    <div class="field-group">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" placeholder="Create a strong password" autocomplete="new-password"/>
+        <button class="pw-toggle" id="pwToggle" type="button" aria-label="Show/hide password" title="Show/hide">
+          <span id="pwEye">👁</span>
+        </button>
+      </div>
+      <div class="field-error" id="passwordErr"></div>
+
+      <div class="strength-wrap" id="strengthWrap" style="display:none">
+        <div class="strength-bars">
+          <div class="strength-bar" id="bar1"></div>
+          <div class="strength-bar" id="bar2"></div>
+          <div class="strength-bar" id="bar3"></div>
+          <div class="strength-bar" id="bar4"></div>
+        </div>
+        <div class="strength-label" id="strengthLabel">—</div>
+        <div class="strength-rules">
+          <div class="rule" id="ruleLen"><span class="rule-dot"></span>8+ characters</div>
+          <div class="rule" id="ruleUpper"><span class="rule-dot"></span>Uppercase letter</div>
+          <div class="rule" id="ruleNum"><span class="rule-dot"></span>Number</div>
+          <div class="rule" id="ruleSym"><span class="rule-dot"></span>Symbol (!@#…)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label for="confirmPw">Confirm Password</label>
+      <div class="input-wrap">
+        <input type="password" id="confirmPw" placeholder="Repeat your password" autocomplete="new-password"/>
+        <span class="field-icon"></span>
+      </div>
+      <div class="field-error" id="confirmPwErr"></div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" disabled>Create Account</button>
+
+    <div class="success-msg" id="successMsg">
+      <span style="font-size:1.2rem">🎉</span>
+      <span id="successText">Account created! Saved to localStorage.</span>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const LS_KEY = 'reg-form-submissions';
+
+    // ── FIELD REFS ──────────────────────────────────────
+    const fields = {
+      firstName: { el: q('#firstName'), err: q('#firstNameErr') },
+      lastName:  { el: q('#lastName'),  err: q('#lastNameErr')  },
+      email:     { el: q('#email'),     err: q('#emailErr')     },
+      phone:     { el: q('#phone'),     err: q('#phoneErr')     },
+      password:  { el: q('#password'),  err: q('#passwordErr')  },
+      confirmPw: { el: q('#confirmPw'), err: q('#confirmPwErr') },
+    };
+    const submitBtn   = q('#submitBtn');
+    const successMsg  = q('#successMsg');
+    const successText = q('#successText');
+
+    function q(sel) { return document.querySelector(sel); }
+
+    // ── VALIDATORS ─────────────────────────────────────
+    function validateName(val, label) {
+      if (!val.trim()) return `${label} is required`;
+      if (val.trim().length < 2) return `${label} must be at least 2 characters`;
+      if (!/^[a-zA-ZÀ-ÖØ-öø-ÿ' -]+$/.test(val.trim())) return `${label} contains invalid characters`;
+      return '';
+    }
+
+    function validateEmail(val) {
+      if (!val.trim()) return 'Email is required';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val.trim())) return 'Enter a valid email address';
+      return '';
+    }
+
+    function validatePhone(val) {
+      if (!val.trim()) return 'Phone number is required';
+      const digits = val.replace(/\D/g,'');
+      if (digits.length < 7 || digits.length > 15) return 'Enter a valid phone number (7–15 digits)';
+      return '';
+    }
+
+    function validatePassword(val) {
+      if (!val) return 'Password is required';
+      if (val.length < 8) return 'Password must be at least 8 characters';
+      if (getStrengthScore(val) < 2) return 'Password is too weak — see checklist below';
+      return '';
+    }
+
+    function validateConfirm(val) {
+      if (!val) return 'Please confirm your password';
+      if (val !== fields.password.el.value) return 'Passwords do not match';
+      return '';
+    }
+
+    // ── STRENGTH ───────────────────────────────────────
+    const rules = [
+      { id:'ruleLen',   test: v => v.length >= 8,          label:'8+ characters'    },
+      { id:'ruleUpper', test: v => /[A-Z]/.test(v),        label:'Uppercase letter'  },
+      { id:'ruleNum',   test: v => /[0-9]/.test(v),        label:'Number'            },
+      { id:'ruleSym',   test: v => /[^a-zA-Z0-9]/.test(v), label:'Symbol'           },
+    ];
+
+    const strengthInfo = [
+      { label:'—',         color:'var(--muted)' },
+      { label:'Weak',      color:'var(--err)'   },
+      { label:'Fair',      color:'var(--warn)'  },
+      { label:'Good',      color:'#84cc16'      },
+      { label:'Strong',    color:'var(--ok)'    },
+    ];
+
+    function getStrengthScore(val) { return rules.filter(r => r.test(val)).length; }
+
+    function updateStrength(val) {
+      const wrap = q('#strengthWrap');
+      if (!val) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+
+      const score = getStrengthScore(val);
+      const info  = strengthInfo[score];
+
+      for (let i = 1; i <= 4; i++) {
+        const bar = q(`#bar${i}`);
+        bar.className = 'strength-bar';
+        if (i <= score) bar.classList.add(`lit-${score}`);
+      }
+
+      const lbl = q('#strengthLabel');
+      lbl.textContent = info.label;
+      lbl.style.color = info.color;
+
+      rules.forEach(r => {
+        const el = q(`#${r.id}`);
+        el.classList.toggle('met', r.test(val));
+      });
+    }
+
+    // ── APPLY ERROR/VALID STATE ─────────────────────────
+    function setValid(fieldKey) {
+      const { el, err } = fields[fieldKey];
+      el.classList.remove('invalid'); el.classList.add('valid');
+      err.textContent = ''; err.classList.remove('show');
+    }
+    function setError(fieldKey, msg) {
+      const { el, err } = fields[fieldKey];
+      el.classList.remove('valid'); el.classList.add('invalid');
+      err.textContent = msg; err.classList.add('show');
+    }
+    function setNeutral(fieldKey) {
+      const { el, err } = fields[fieldKey];
+      el.classList.remove('valid','invalid');
+      err.textContent = ''; err.classList.remove('show');
+    }
+
+    // ── LIVE VALIDATION ─────────────────────────────────
+    function bindField(key, validatorFn) {
+      const el = fields[key].el;
+      let touched = false;
+
+      el.addEventListener('blur', () => {
+        touched = true;
+        const e = validatorFn(el.value);
+        e ? setError(key, e) : setValid(key);
+        checkAll();
+      });
+
+      el.addEventListener('input', () => {
+        if (!touched) return;
+        const e = validatorFn(el.value);
+        e ? setError(key, e) : setValid(key);
+        if (key === 'password') {
+          updateStrength(el.value);
+          // re-validate confirm if already touched
+          if (fields.confirmPw.el.classList.contains('valid') || fields.confirmPw.el.classList.contains('invalid')) {
+            const ce = validateConfirm(fields.confirmPw.el.value);
+            ce ? setError('confirmPw', ce) : setValid('confirmPw');
+          }
+        }
+        checkAll();
+      });
+    }
+
+    bindField('firstName', v => validateName(v, 'First name'));
+    bindField('lastName',  v => validateName(v, 'Last name'));
+    bindField('email',     validateEmail);
+    bindField('phone',     validatePhone);
+    bindField('password',  validatePassword);
+    bindField('confirmPw', validateConfirm);
+
+    // Password strength fires immediately (no wait for blur)
+    fields.password.el.addEventListener('input', e => updateStrength(e.target.value));
+
+    // ── SHOW/HIDE PASSWORD ──────────────────────────────
+    const pwToggle = q('#pwToggle');
+    const pwEye    = q('#pwEye');
+    let pwVisible  = false;
+    pwToggle.addEventListener('click', () => {
+      pwVisible = !pwVisible;
+      fields.password.el.type = pwVisible ? 'text' : 'password';
+      pwEye.textContent = pwVisible ? '🙈' : '👁';
+    });
+
+    // ── CHECK ALL ───────────────────────────────────────
+    function checkAll() {
+      const allValid =
+        !validateName(fields.firstName.el.value,'First name') &&
+        !validateName(fields.lastName.el.value, 'Last name')  &&
+        !validateEmail(fields.email.el.value)                 &&
+        !validatePhone(fields.phone.el.value)                 &&
+        !validatePassword(fields.password.el.value)           &&
+        !validateConfirm(fields.confirmPw.el.value);
+      submitBtn.disabled = !allValid;
+    }
+
+    // ── SUBMIT ──────────────────────────────────────────
+    submitBtn.addEventListener('click', () => {
+      const submission = {
+        id:        Date.now(),
+        firstName: fields.firstName.el.value.trim(),
+        lastName:  fields.lastName.el.value.trim(),
+        email:     fields.email.el.value.trim(),
+        phone:     fields.phone.el.value.trim(),
+        strength:  strengthInfo[getStrengthScore(fields.password.el.value)].label,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Append to localStorage array
+      let list = [];
+      try { list = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch{}
+      list.push(submission);
+      localStorage.setItem(LS_KEY, JSON.stringify(list));
+
+      // Update log
+      renderLog();
+
+      // Success flash
+      successText.textContent = `Welcome, ${submission.firstName}! Saved to localStorage (${list.length} total).`;
+      successMsg.classList.add('show');
+      setTimeout(() => successMsg.classList.remove('show'), 4000);
+
+      // Reset form
+      Object.keys(fields).forEach(k => {
+        fields[k].el.value = '';
+        setNeutral(k);
+      });
+      q('#strengthWrap').style.display = 'none';
+      submitBtn.disabled = true;
+    });
+
+    // ── RENDER LOG ──────────────────────────────────────
+    function renderLog() {
+      let list = [];
+      try { list = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch{}
+
+      const logList  = q('#logList');
+      const logEmpty = q('#logEmpty');
+
+      if (!list.length) {
+        logList.innerHTML = '';
+        logList.appendChild(Object.assign(document.createElement('div'), {
+          className: 'log-empty', textContent: 'No submissions yet.'
+        }));
+        return;
+      }
+
+      logList.innerHTML = [...list].reverse().map(s => `
+        <div class="log-item">
+          <strong>${escHtml(s.firstName)} ${escHtml(s.lastName)}</strong>
+          · ${escHtml(s.email)}
+          · <span style="color:var(--muted)">${escHtml(s.phone)}</span>
+          · pw: ${escHtml(s.strength)}
+          <span style="display:block;margin-top:2px;color:var(--muted);font-size:.65rem">${new Date(s.timestamp).toLocaleString()}</span>
+        </div>`).join('');
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── CLEAR LOG ───────────────────────────────────────
+    q('#logClear').addEventListener('click', () => {
+      if (!confirm('Clear all submissions from localStorage?')) return;
+      localStorage.removeItem(LS_KEY);
+      renderLog();
+    });
+
+    // ── PHONE AUTO-FORMAT ───────────────────────────────
+    fields.phone.el.addEventListener('input', e => {
+      let v = e.target.value.replace(/[^\d+\s\-().]/g,'');
+      e.target.value = v;
+    });
+
+    // ── INIT ────────────────────────────────────────────
+    renderLog();
+  })();
+  </script>
+</body>
+</html>
