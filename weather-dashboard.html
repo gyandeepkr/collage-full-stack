@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f0f4ff;
+      --surface:  #ffffff;
+      --text:     #0f1628;
+      --muted:    #7b85a0;
+      --border:   rgba(15,22,40,.08);
+      --shadow:   rgba(15,22,40,.1);
+      --accent:   #2563eb;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 60px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ── WAVY SVG HEADER BG ── */
+    .hero-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 340px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #0ea5e9 100%);
+      clip-path: ellipse(120% 100% at 50% 0%);
+      z-index: 0;
+      overflow: hidden;
+    }
+    .hero-bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    /* floating cloud blobs */
+    .cloud { position: absolute; border-radius: 50%; background: rgba(255,255,255,.07); }
+    .c1 { width:200px;height:120px; top:30px; left:8%; }
+    .c2 { width:140px;height:80px;  top:60px; left:16%; }
+    .c3 { width:260px;height:140px; top:20px; right:5%; }
+    .c4 { width:160px;height:90px;  top:55px; right:14%; }
+
+    /* ── HEADER ── */
+    header {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 960px;
+      padding: 48px 0 0;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 56px;
+    }
+    .eyebrow {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.6);
+      margin-bottom: 14px;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      line-height: 1.08;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 20px rgba(0,0,0,.2);
+    }
+    .subtitle {
+      font-size: .9rem;
+      color: rgba(255,255,255,.65);
+      margin-bottom: 28px;
+      font-weight: 300;
+    }
+
+    /* ── CITY EDITOR ── */
+    .city-editor {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .city-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .city-input {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-family: 'Outfit', sans-serif;
+      font-size: .85rem;
+      font-weight: 500;
+      color: #fff;
+      outline: none;
+      width: 150px;
+      transition: background .2s, border-color .2s;
+      backdrop-filter: blur(6px);
+    }
+    .city-input::placeholder { color: rgba(255,255,255,.4); }
+    .city-input:focus { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.5); }
+
+    .fetch-btn {
+      background: #fff;
+      color: #1d4ed8;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 22px;
+      font-family: 'Outfit', sans-serif;
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,.15);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .fetch-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+    .fetch-btn:active { transform: translateY(0); }
+    .fetch-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+    /* ── TIMESTAMP ── */
+    .last-fetched {
+      font-family: 'Azeret Mono', monospace;
+      font-size: .68rem;
+      color: rgba(255,255,255,.4);
+      margin-top: 6px;
+      min-height: 16px;
+    }
+
+    /* ── CARDS CONTAINER ── */
+    .cards {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      width: 100%; max-width: 960px;
+    }
+
+    /* ── WEATHER CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px var(--border), 0 20px 60px var(--shadow);
+      transition: transform .25s ease, box-shadow .25s ease;
+      animation: cardIn .5s cubic-bezier(.34,1.3,.64,1) both;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 4px 6px var(--border), 0 32px 80px rgba(15,22,40,.16);
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform:translateY(30px) scale(.95); }
+      to   { opacity:1; transform:translateY(0)    scale(1);   }
+    }
+    .card:nth-child(1) { animation-delay:.05s; }
+    .card:nth-child(2) { animation-delay:.15s; }
+    .card:nth-child(3) { animation-delay:.25s; }
+
+    /* color bar at top of each card */
+    .card-accent {
+      height: 5px;
+      background: linear-gradient(90deg, var(--c1), var(--c2));
+    }
+
+    .card-body { padding: 28px 28px 24px; }
+
+    /* city + country */
+    .card-location {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .city-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .country-tag {
+      font-family: 'Azeret Mono', monospace;
+      font-size: .65rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--bg);
+      border-radius: 4px;
+      padding: 3px 8px;
+      margin-top: 3px;
+    }
+    .local-time {
+      font-family: 'Azeret Mono', monospace;
+      font-size: .7rem;
+      color: var(--muted);
+      text-align: right;
+    }
+    .local-time-label { font-size: .6rem; display: block; margin-bottom: 2px; opacity: .7; }
+
+    /* big weather emoji */
+    .weather-emoji {
+      font-size: 4.5rem;
+      line-height: 1;
+      margin-bottom: 12px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.12));
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    .card:nth-child(2) .weather-emoji { animation-delay: -1.3s; }
+    .card:nth-child(3) .weather-emoji { animation-delay: -2.6s; }
+
+    /* temperature */
+    .temp-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .temp-main {
+      font-size: 3.2rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.03em;
+    }
+    .temp-unit {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .feels-like {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* condition */
+    .condition {
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    /* stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-val {
+      font-family: 'Azeret Mono', monospace;
+      font-size: .85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .stat-label {
+      font-size: .65rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── SKELETON LOADING CARD ── */
+    .card-skeleton {
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px var(--border), 0 20px 60px var(--shadow);
+      padding: 28px;
+    }
+    .skel {
+      background: linear-gradient(90deg, #e8edf5 25%, #d0d8ea 50%, #e8edf5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skel-accent { height: 5px; border-radius: 0; margin: -28px -28px 28px; }
+    .skel-title  { height: 22px; width: 55%; margin-bottom: 10px; }
+    .skel-sub    { height: 14px; width: 35%; margin-bottom: 28px; }
+    .skel-emoji  { height: 72px; width: 72px; border-radius: 12px; margin-bottom: 14px; }
+    .skel-temp   { height: 48px; width: 45%; margin-bottom: 8px; }
+    .skel-cond   { height: 16px; width: 70%; margin-bottom: 20px; }
+    .skel-bar    { height: 1px; background: var(--border); margin-bottom: 18px; }
+    .skel-stats  { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .skel-stat   { height: 36px; }
+
+    /* ── ERROR CARD ── */
+    .card-error {
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px var(--border), 0 20px 60px var(--shadow);
+      padding: 36px 28px;
+      text-align: center;
+      border: 1px solid rgba(239,68,68,.15);
+    }
+    .error-icon { font-size: 2.8rem; margin-bottom: 14px; display: block; }
+    .error-title { font-size: 1rem; font-weight: 700; color: #ef4444; margin-bottom: 6px; }
+    .error-msg   { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+    .error-city  { font-size: .75rem; font-family: 'Azeret Mono', monospace; color: var(--muted); margin-top: 10px; opacity:.7; }
+
+    /* ── GLOBAL ERROR BANNER ── */
+    .global-error {
+      background: #fef2f2;
+      border: 1px solid rgba(239,68,68,.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: .85rem;
+      color: #dc2626;
+      width: 100%; max-width: 960px;
+      margin-bottom: 24px;
+      position: relative; z-index: 1;
+      animation: cardIn .35s ease;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index: 1;
+      margin-top: 40px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: .68rem;
+      letter-spacing: .08em;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.8;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .city-input { width: 130px; }
+      h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- hero background -->
+  <div class="hero-bg">
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="cloud c4"></div>
+  </div>
+
+  <header>
+    <p class="eyebrow">Mini App · 04 · Open-Meteo API</p>
+    <h1>Live Weather</h1>
+    <p class="subtitle">3 cities fetched simultaneously with Promise.all — no API key needed.</p>
+
+    <div class="city-editor">
+      <div class="city-input-wrap">
+        <input class="city-input" id="city0" value="Tokyo" placeholder="City 1" maxlength="30" spellcheck="false"/>
+      </div>
+      <div class="city-input-wrap">
+        <input class="city-input" id="city1" value="New York" placeholder="City 2" maxlength="30" spellcheck="false"/>
+      </div>
+      <div class="city-input-wrap">
+        <input class="city-input" id="city2" value="London" placeholder="City 3" maxlength="30" spellcheck="false"/>
+      </div>
+      <button class="fetch-btn" id="fetchBtn">
+        <span id="fetchIcon">⟳</span>
+        <span id="fetchLabel">Fetch Weather</span>
+      </button>
+    </div>
+    <div class="last-fetched" id="lastFetched"></div>
+  </header>
+
+  <div id="globalError"></div>
+  <div class="cards" id="cards"></div>
+
+  <footer>
+    Weather data from <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> (free, no API key) ·
+    Geocoding via <a href="https://geocoding-api.open-meteo.com" target="_blank">Open-Meteo Geocoding</a><br/>
+    Fetched simultaneously using <code>Promise.all()</code>
+  </footer>
+
+  <script>
+  (function() {
+    // ── WMO WEATHER CODE MAP ─────────────────────────────
+    const WMO = {
+      0:  { label:'Clear Sky',          emoji:'☀️' },
+      1:  { label:'Mainly Clear',       emoji:'🌤️' },
+      2:  { label:'Partly Cloudy',      emoji:'⛅' },
+      3:  { label:'Overcast',           emoji:'☁️' },
+      45: { label:'Foggy',              emoji:'🌫️' },
+      48: { label:'Rime Fog',           emoji:'🌫️' },
+      51: { label:'Light Drizzle',      emoji:'🌦️' },
+      53: { label:'Drizzle',            emoji:'🌧️' },
+      55: { label:'Heavy Drizzle',      emoji:'🌧️' },
+      61: { label:'Light Rain',         emoji:'🌧️' },
+      63: { label:'Rain',               emoji:'🌧️' },
+      65: { label:'Heavy Rain',         emoji:'🌨️' },
+      71: { label:'Light Snow',         emoji:'🌨️' },
+      73: { label:'Snow',               emoji:'❄️' },
+      75: { label:'Heavy Snow',         emoji:'❄️' },
+      77: { label:'Snow Grains',        emoji:'🌨️' },
+      80: { label:'Light Showers',      emoji:'🌦️' },
+      81: { label:'Showers',            emoji:'🌧️' },
+      82: { label:'Heavy Showers',      emoji:'⛈️' },
+      85: { label:'Snow Showers',       emoji:'🌨️' },
+      86: { label:'Heavy Snow Showers', emoji:'❄️' },
+      95: { label:'Thunderstorm',       emoji:'⛈️' },
+      96: { label:'Thunderstorm + Hail',emoji:'⛈️' },
+      99: { label:'Severe Thunderstorm',emoji:'🌩️' },
+    };
+
+    // card accent color pairs per slot
+    const PALETTES = [
+      { c1:'#f97316', c2:'#fb923c' },   // orange
+      { c1:'#3b82f6', c2:'#38bdf8' },   // blue
+      { c1:'#8b5cf6', c2:'#a78bfa' },   // violet
+    ];
+
+    const cards       = document.getElementById('cards');
+    const fetchBtn    = document.getElementById('fetchBtn');
+    const fetchLabel  = document.getElementById('fetchLabel');
+    const fetchIcon   = document.getElementById('fetchIcon');
+    const lastFetched = document.getElementById('lastFetched');
+    const globalError = document.getElementById('globalError');
+
+    // ── GEOCODE (name → lat/lon/country/timezone) ────────
+    async function geocode(cityName) {
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Geocoding failed (${res.status})`);
+      const data = await res.json();
+      if (!data.results?.length) throw new Error(`City not found: "${cityName}"`);
+      const r = data.results[0];
+      return { name: r.name, country: r.country_code, lat: r.latitude, lon: r.longitude, tz: r.timezone };
+    }
+
+    // ── FETCH WEATHER ────────────────────────────────────
+    async function fetchWeather({ lat, lon, tz }) {
+      const params = new URLSearchParams({
+        latitude:   lat,
+        longitude:  lon,
+        current:    'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weathercode',
+        wind_speed_unit: 'kmh',
+        timezone:   tz,
+      });
+      const url = `https://api.open-meteo.com/v1/forecast?${params}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Weather API error (${res.status})`);
+      return res.json();
+    }
+
+    // ── FULL FETCH FOR ONE CITY ──────────────────────────
+    async function fetchCity(cityName) {
+      const geo   = await geocode(cityName);
+      const wx    = await fetchWeather(geo);
+      const cur   = wx.current;
+      const code  = cur.weathercode;
+      const wmo   = WMO[code] ?? { label: `Code ${code}`, emoji: '🌡️' };
+
+      // local time in city timezone
+      const localTime = new Date().toLocaleTimeString('en-US', {
+        timeZone: geo.tz, hour:'2-digit', minute:'2-digit', hour12: true
+      });
+
+      return {
+        city:      geo.name,
+        country:   geo.country,
+        timezone:  geo.tz,
+        localTime,
+        temp:      Math.round(cur.temperature_2m),
+        feelsLike: Math.round(cur.apparent_temperature),
+        humidity:  cur.relative_humidity_2m,
+        wind:      Math.round(cur.wind_speed_10m),
+        condition: wmo.label,
+        emoji:     wmo.emoji,
+      };
+    }
+
+    // ── RENDER: SKELETON ─────────────────────────────────
+    function renderSkeletons() {
+      cards.innerHTML = Array.from({length:3}).map(() => `
+        <div class="card-skeleton">
+          <div class="skel skel-accent"></div>
+          <div class="skel skel-title"></div>
+          <div class="skel skel-sub"></div>
+          <div class="skel skel-emoji"></div>
+          <div class="skel skel-temp"></div>
+          <div class="skel skel-cond"></div>
+          <div class="skel-bar"></div>
+          <div class="skel-stats">
+            <div class="skel skel-stat"></div>
+            <div class="skel skel-stat"></div>
+            <div class="skel skel-stat"></div>
+          </div>
+        </div>`).join('');
+    }
+
+    // ── RENDER: ERROR CARD ───────────────────────────────
+    function errorCard(cityName, msg) {
+      return `<div class="card-error">
+        <span class="error-icon">⚠️</span>
+        <div class="error-title">Failed to load</div>
+        <div class="error-msg">${escHtml(msg)}</div>
+        <div class="error-city">${escHtml(cityName)}</div>
+      </div>`;
+    }
+
+    // ── RENDER: WEATHER CARD ─────────────────────────────
+    function weatherCard(data, idx) {
+      const p = PALETTES[idx % PALETTES.length];
+      return `
+        <div class="card" style="--c1:${p.c1};--c2:${p.c2};animation-delay:${idx*.1}s">
+          <div class="card-accent"></div>
+          <div class="card-body">
+            <div class="card-location">
+              <div>
+                <div class="city-name">${escHtml(data.city)}</div>
+                <div class="country-tag">${escHtml(data.country)}</div>
+              </div>
+              <div class="local-time">
+                <span class="local-time-label">Local time</span>
+                ${escHtml(data.localTime)}
+              </div>
+            </div>
+
+            <span class="weather-emoji">${data.emoji}</span>
+
+            <div class="temp-row">
+              <span class="temp-main">${data.temp}</span>
+              <span class="temp-unit">°C</span>
+            </div>
+            <div class="feels-like">Feels like ${data.feelsLike}°C</div>
+            <div class="condition">${escHtml(data.condition)}</div>
+
+            <div class="stats-row">
+              <div class="stat">
+                <div class="stat-val">${data.humidity}%</div>
+                <div class="stat-label">Humidity</div>
+              </div>
+              <div class="stat">
+                <div class="stat-val">${data.wind}</div>
+                <div class="stat-label">km/h Wind</div>
+              </div>
+              <div class="stat">
+                <div class="stat-val">${data.feelsLike}°</div>
+                <div class="stat-label">Feels Like</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ── MAIN FETCH HANDLER ───────────────────────────────
+    async function doFetch() {
+      const cityInputs = [
+        document.getElementById('city0').value.trim(),
+        document.getElementById('city1').value.trim(),
+        document.getElementById('city2').value.trim(),
+      ].map(v => v || 'Tokyo');
+
+      // Validate at least one city
+      if (cityInputs.every(c => !c)) {
+        globalError.innerHTML = `<div class="global-error">⚠️ Please enter at least one city name.</div>`;
+        return;
+      }
+      globalError.innerHTML = '';
+
+      // UI: loading state
+      fetchBtn.disabled = true;
+      fetchLabel.textContent = 'Fetching…';
+      fetchIcon.style.animation = 'spin 1s linear infinite';
+      fetchIcon.style.display = 'inline-block';
+      renderSkeletons();
+
+      // ── Promise.all: fetch all cities simultaneously ──
+      const results = await Promise.allSettled(
+        cityInputs.map(city => fetchCity(city))
+      );
+
+      // Render results
+      cards.innerHTML = results.map((result, i) => {
+        if (result.status === 'fulfilled') {
+          return weatherCard(result.value, i);
+        } else {
+          const msg = result.reason?.message || 'Unknown error';
+          return errorCard(cityInputs[i], msg);
+        }
+      }).join('');
+
+      // Check if ALL failed → show global error too
+      const allFailed = results.every(r => r.status === 'rejected');
+      if (allFailed) {
+        globalError.innerHTML = `<div class="global-error">
+          ⚠️ All cities failed to load. Check your internet connection and city names.
+        </div>`;
+      }
+
+      // Update timestamp
+      lastFetched.textContent = `Last fetched: ${new Date().toLocaleTimeString()}`;
+
+      // Restore button
+      fetchBtn.disabled = false;
+      fetchLabel.textContent = 'Refresh';
+      fetchIcon.style.animation = '';
+    }
+
+    // ── SPIN ANIMATION ───────────────────────────────────
+    const style = document.createElement('style');
+    style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+    document.head.appendChild(style);
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── KEYBOARD: Enter on inputs ────────────────────────
+    ['city0','city1','city2'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') doFetch();
+      });
+    });
+
+    fetchBtn.addEventListener('click', doFetch);
+
+    // Auto-fetch on load
+    doFetch();
+  })();
+  </script>
+</body>
+</html>
